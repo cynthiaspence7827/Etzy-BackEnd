@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
   Shop.associate = function (models) {
     Shop.hasMany(models.Product, { foreignKey: 'shopId' });
     Shop.belongsTo(models.User, { foreignKey: 'ownerId' });
-    Shop.hasMany(models.Review, { through: 'Purchase', otherKey: 'purchaseId', foreignKey: 'shopId' });
+    // Shop.hasMany(models.Review, { through: 'Purchase', otherKey: 'purchaseId', foreignKey: 'shopId' });
   };
   return Shop;
 };

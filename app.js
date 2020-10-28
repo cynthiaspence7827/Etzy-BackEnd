@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(routes);
+app.use('/api', routes);
 
 app.use(function(_req, _res, next) {
   next(createError(404));

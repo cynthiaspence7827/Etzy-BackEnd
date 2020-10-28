@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     price: {
       allowNull: false,
-      type: DataTypes.FLOAT(6, 2)
+      type: DataTypes.FLOAT
     },
     images: {
       allowNull: false,
@@ -26,12 +26,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: { model: 'Shops' },
       type: DataTypes.INTEGER
+    }
   }, {});
   Product.associate = function(models) {
     Product.belongsTo(models.Shop, { foreignKey: 'shopId' });
     Product.hasMany(models.Favorite, { foreignKey: 'productId' });
     Product.hasMany(models.Purchase, { foreignKey: 'productId' });
-    Product.hasMany(models.Review, { through: 'Purchase', otherKey: 'purchaseId', foreignKey: 'productId' });
   };
   return Product;
 };

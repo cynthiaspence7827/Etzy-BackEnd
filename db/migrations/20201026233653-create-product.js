@@ -14,7 +14,7 @@ module.exports = {
       },
       price: {
         allowNull: false,
-        type: Sequelize.FLOAT(6, 2),
+        type: Sequelize.FLOAT,
       },
       images: {
         allowNull: false,
