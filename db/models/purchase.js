@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER
     }
   }, {});
-  Purchase.associate = function(models) {
+  Purchase.associate = function (models) {
     Purchase.belongsTo(models.Product, { foreignKey: 'productId' });
     Purchase.belongsTo(models.Order, { foreignKey: 'orderId' });
     Purchase.hasMany(models.Review, { foreignKey: 'purchaseId' });

@@ -7,7 +7,6 @@ const {
   User,
   Favorite,
   Follow,
-  Index,
   Order,
   Product,
   Purchase,
@@ -18,12 +17,12 @@ const router = express.Router();
 const nameValidators = [
   check("firstName")
     .exists({ checkFalsy: true })
-    .withMessage("Please give us a first name.")
+    .withMessage("Please enter a first name.")
     .isLength({ min: 1, max: 50 })
     .withMessage("A first name must be 50 characters or less in length."),
   check("lastName")
     .exists({ checkFalsy: true })
-    .withMessage("Please give us a last name.")
+    .withMessage("Please enter a last name.")
     .isLength({ min: 1, max: 50 })
     .withMessage("A last name can't be longer than 50 characters in length."),
 ];
@@ -82,7 +81,8 @@ router.get(
       ]
     });
     res.json(user);
-  }));
+  })
+);
 
 // create a new user
 router.post(
@@ -90,6 +90,7 @@ router.post(
   nameValidators,
   emailValidator,
   passwordValidator,
+  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const {
       firstName,
@@ -110,6 +111,7 @@ router.post(
 // return JWT and all information for loggedIn user
 router.post('/token',
   emailValidator,
+  handleValidationErrors,
   asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     if (!user || !user.validatePassword(password)) {
@@ -155,7 +157,8 @@ router.post('/token',
       ]
     });
     res.json({ token, user });
-  }));
+  })
+);
 
 // Edit user data by id
 // name change

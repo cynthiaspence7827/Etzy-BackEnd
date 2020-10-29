@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER
     }
   }, {});
-  Product.associate = function(models) {
+  Product.associate = function (models) {
     Product.belongsTo(models.Shop, { foreignKey: 'shopId' });
     Product.hasMany(models.Favorite, { foreignKey: 'productId' });
     Product.hasMany(models.Purchase, { foreignKey: 'productId' });
