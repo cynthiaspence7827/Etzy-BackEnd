@@ -21,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
     avatar: DataTypes.STRING
   }, {});
   User.associate = function (models) {
-    // User.hasMany(models.Review, { foreignKey: 'userId' });
     User.hasMany(models.Shop, { foreignKey: 'ownerId' });
     User.hasMany(models.Follow, { as: 'Following', foreignKey: 'followerId' });
     User.hasMany(models.Follow, { as: 'Follower', foreignKey: 'followingId' });

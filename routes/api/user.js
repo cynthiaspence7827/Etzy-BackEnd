@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const express = require('express');
 const { check } = require('express-validator');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
-const { makeUserToken, requireAuth } = require('../../auth');
+const { makeUserToken } = require('../../auth');
 const {
   User,
   Favorite,

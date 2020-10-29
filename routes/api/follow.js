@@ -3,6 +3,7 @@ const router = express.Router();
 const { Follow } = require('../../db/models');
 const { asyncHandler } = require('../../utils');
 
+// follow or unfollow another user
 router.post(
   '/',
   asyncHandler(async (req, res) => {

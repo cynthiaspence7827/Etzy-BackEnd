@@ -13,6 +13,7 @@ const reviewValidator = [
     .withMessage('To submit your review, there must be a body')
 ];
 
+// create a new review
 router.post(
   '/',
   reviewValidator,
@@ -38,6 +39,7 @@ router.post(
   })
 );
 
+// update a review
 router.put(
   '/:id(\\d+)',
   reviewValidator,
@@ -64,6 +66,7 @@ router.put(
   })
 );
 
+// delete a review
 router.delete(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {

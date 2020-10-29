@@ -8,8 +8,7 @@ const {
   Shop,
   User
 } = require('../../db/models');
-const { check } = require('express-validator');
-const { asyncHandler, handleValidationErrors } = require('../../utils');
+const { asyncHandler } = require('../../utils');
 
 router.get(
   '/:id(\\d+)',

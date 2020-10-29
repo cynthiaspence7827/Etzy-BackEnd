@@ -54,6 +54,31 @@ router.get(
   })
 );
 
+// get 16 newest products
+router.get(
+  '/newest',
+  asyncHandler(async (req, res) => {
+    let products = await Product.findAll({
+      order: [ [ "createdAt", "DESC" ] ],
+      limit: 16
+    });
+    let productId = products.map(product => product.id);
+    for (let i = 0; i < productId.length; i++) {
+      productId[ i ] = await Purchase.findAll({
+        where: {
+          productId: productId[ i ]
+        },
+        include: Review
+      });
+    }
+    products = products.map((product, i) => {
+      reviews = productId[ i ];
+      return { product, reviews };
+    });
+    res.json(products);
+  })
+);
+
 // get product by id
 router.get(
   '/:id(\\d+)',
@@ -71,6 +96,7 @@ router.get(
   })
 );
 
+// create a new product
 router.post(
   '/',
   productValidators,
@@ -98,6 +124,7 @@ router.post(
   })
 );
 
+// update a product
 router.put(
   '/:id(\\d+)',
   productValidators,
@@ -126,6 +153,7 @@ router.put(
   })
 );
 
+// delete a product
 router.delete(
   '/:id(\\d+)',
   asyncHandler(async (req, res, next) => {

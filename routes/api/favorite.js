@@ -3,6 +3,7 @@ const { asyncHandler } = require('../../utils');
 const router = express.Router();
 const { Favorite } = require('../../db/models');
 
+// favorite or unfavorite a product or shop
 router.post(
   '/',
   asyncHandler(async (req, res) => {

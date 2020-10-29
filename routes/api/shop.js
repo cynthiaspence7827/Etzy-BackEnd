@@ -18,10 +18,20 @@ const nameValidator = [
 // get all shops
 router.get(
   '/',
-  nameValidator,
-  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const shops = await Shop.findAll();
+    res.json(shops);
+  })
+);
+
+// find 8 newest shops
+router.get(
+  '/newest',
+  asyncHandler(async (req, res) => {
+    const shops = await Shop.findAll({
+      order: [ [ "createdAt", "DESC" ] ],
+      limit: 8
+    });
     res.json(shops);
   })
 );
@@ -46,6 +56,8 @@ router.get(
 // create a new shop
 router.post(
   '/',
+  nameValidator,
+  handleValidationErrors,
   asyncHandler(async (req, res) => {
     const {
       name,
@@ -60,6 +72,8 @@ router.post(
 // edit a shop
 router.put(
   '/:id(\\d+)',
+  nameValidator,
+  handleValidationErrors,
   asyncHandler(async (req, res, next) => {
     const shop = await Shop.findByPk(req.params.id);
     if (shop) {
