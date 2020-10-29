@@ -44,7 +44,6 @@ const emailValidator = [
 ];
 
 const passwordValidator = [
-  // MIRA Tested
   check("password")
     .exists({ checkFalsy: true })
     .withMessage("Please give us a password.")
@@ -74,12 +73,10 @@ router.get(
         {
           model: Follow,
           as: 'Follower',
-          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Follow,
           as: 'Following',
-          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         }
       ]
     });
@@ -114,21 +111,10 @@ router.post(
 // Create a JWT token for a user on login
 // return JWT and all information for loggedIn user
 router.post('/token',
-  emailValidator,
-  handleValidationErrors,
   asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
-    if (!user || !user.validatePassword(password)) {
-      const err = new Error('Login Failed');
-      err.title = '401 Login Failed';
-      err.status = 401;
-      err.errors = [ 'The prvided credentials are invalid' ];
-      return next(err);
-    }
-    const token = makeUserToken(user);
     const user = await User.findOne({
       where: { email },
-      attributes: [ "firstName", "lastName", "avatar", "createdAt", "email" ],
       include: [
         {
           model: Shop,
@@ -137,12 +123,10 @@ router.post('/token',
         {
           model: Follow,
           as: 'Follower',
-          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Follow,
           as: 'Following',
-          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Favorite,
@@ -163,6 +147,15 @@ router.post('/token',
         }
       ]
     });
+    const token = makeUserToken(user);
+    if (!user || !user.validatePassword(password)) {
+      const err = new Error('Login Failed');
+      err.title = '401 Login Failed';
+      err.status = 401;
+      err.errors = [ 'The prvided credentials are invalid' ];
+      return next(err);
+    }
+    user.hashedPassword = null;
     res.json({ token, user });
   })
 );

@@ -15,4 +15,4 @@ const makeUserToken = user => {
   return token;
 };
 
-module.exports = makeUserToken;
+module.exports = { makeUserToken };
