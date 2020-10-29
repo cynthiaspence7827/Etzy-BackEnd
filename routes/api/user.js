@@ -160,6 +160,19 @@ router.post('/token',
   })
 );
 
+router.get(
+  '/:id(\\d+)/favorites',
+  asyncHandler(async (req, res) => {
+    const user = await User.findByPk(req.params.id);
+    const favorites = await Favorite.findAll({
+      where: {
+        userId: user.id
+      }
+    });
+    res.json(favorites);
+  })
+);
+
 // Edit user data by id
 // name change
 // email change
