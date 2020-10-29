@@ -64,6 +64,7 @@ router.get(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {
     const user = await User.findByPk(req.params.id, {
+      attributes: [ "firstName", "lastName", "avatar", "createdAt" ],
       include: [
         Shop,
         {
@@ -73,10 +74,12 @@ router.get(
         {
           model: Follow,
           as: 'Follower',
+          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Follow,
-          as: 'Following'
+          as: 'Following',
+          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         }
       ]
     });
@@ -96,14 +99,15 @@ router.post(
       firstName,
       lastName,
       email,
-      password
+      password,
+      avatar
     } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
-      firstName, lastName, email, hashedPassword
+      firstName, lastName, email, hashedPassword, avatar
     });
     const token = makeUserToken(newUser);
-    res.status(201).json({ token, newUser });
+    res.status(201).json({ token, newUser: { firstName, lastName, email, avatar, createdAt: newUser.createdAt } });
   })
 );
 
@@ -124,6 +128,7 @@ router.post('/token',
     const token = makeUserToken(user);
     const user = await User.findOne({
       where: { email },
+      attributes: [ "firstName", "lastName", "avatar", "createdAt", "email" ],
       include: [
         {
           model: Shop,
@@ -131,11 +136,13 @@ router.post('/token',
         },
         {
           model: Follow,
-          as: 'Follower'
+          as: 'Follower',
+          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Follow,
-          as: 'Following'
+          as: 'Following',
+          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
         },
         {
           model: Favorite,
@@ -163,10 +170,9 @@ router.post('/token',
 router.get(
   '/:id(\\d+)/favorites',
   asyncHandler(async (req, res) => {
-    const user = await User.findByPk(req.params.id);
     const favorites = await Favorite.findAll({
       where: {
-        userId: user.id
+        userId: req.params.id
       }
     });
     res.json(favorites);
@@ -176,37 +182,118 @@ router.get(
 // Edit user data by id
 // name change
 // email change
-// router.patch(
-//   '/:id(\\d+)',
-//   asyncHandler(async (req, res) => {
-
-//   })
-// );
+router.patch(
+  '/:id(\\d+)',
+  nameValidators,
+  emailValidator,
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const {
+      firstName,
+      lastName,
+      email,
+      avatar
+    } = req.body;
+    const user = await User.findByPk(req.params.id);
+    let updatedUser = await user.update({
+      firstName,
+      lastName,
+      email,
+      avatar
+    });
+    updatedUser = {
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      avatar: updatedUser.avatar,
+      createdAt: updatedUser.createdAt
+    };
+    res.json(updatedUser);
+  })
+);
 
 // password change (verify old password)
-// router.patch(
-//   '/:id(\\d+)/change-password',
-//   passwordValidator,
-//   asyncHandler(async (req, res) => {
+router.patch(
+  '/:id(\\d+)/change-password',
+  passwordValidator,
+  asyncHandler(async (req, res) => {
+    const user = await User.findByPk(req.params.id);
+    const {
+      oldPassword,
+      password,
+      confirmPassword
+    } = req.body;
+    if (!user.validatePassword(oldPassword)) {
+      const err = new Error('The password entered does not match our records.');
+      err.title = '401 Forbidden - Invalid Password';
+      err.status = 401;
+      next(err);
+    } else {
+      let updatedUser = await user.update({
+        password: bcrypt.hash(password, 10)
+      });
+      updatedUser = {
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        createdAt: updatedUser.createdAt
+      };
+      res.json(updatedUser);
+    }
 
-//   })
-// );
+  })
+);
 
 // Delete user by id
-// router.delete(
-//   '/:id(\\d+)',
-//   asyncHandler(async (req, res) => {
-//     const { email, password } = req.body;
-//     const user = await User.findOne({
-//       where: { email }
-//     });
-//     if (!user || !user.validatePassword(password)) {
-//       res.status(401).end();
-//     }
-//     await User.destroy(req.params.id);
-//     res.status(204).end();
-//   })
-// );
+router.delete(
+  '/:id(\\d+)',
+  asyncHandler(async (req, res) => {
+    const { password } = req.body;
+    const user = await User.findByPk(req.params.id);
+    if (!user || !user.validatePassword(password)) {
+      res.status(401).end();
+    }
+    await user.destroy();
+    res.status(204).end();
+  })
+);
+
+router.get(
+  '/:id/followers',
+  asyncHandler(async (req, res) => {
+    const followers = await Follow.findAll({
+      where: {
+        followingId: req.params.id
+      },
+      include: {
+        model: User,
+        as: 'Follower',
+        attributes: [ "firstName", "lastName", "avatar", "createdAt" ],
+        include: Favorite
+      }
+    });
+    res.json(followers);
+  })
+);
+
+router.get(
+  '/:id/following',
+  asyncHandler(async (req, res) => {
+    const following = await Follow.findAll({
+      where: {
+        followerId: req.params.id
+      },
+      include: {
+        model: User,
+        attributes: [ "firstName", "lastName", "avatar", "createdAt" ],
+        as: 'Following',
+        include: Favorite
+      }
+    });
+    res.json(following);
+  })
+);
 
 User.prototype.validatePassword = function (password) {
   return bcrypt.compareSync(password, this.hashedPassword.toString());

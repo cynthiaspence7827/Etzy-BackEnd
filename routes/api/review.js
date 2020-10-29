@@ -1,12 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const {
-  User,
-  Product,
-  Review,
-  Purchase,
-  Shop } = require('../../db/models');
+const { Review } = require('../../db/models');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
 
 const reviewValidator = [

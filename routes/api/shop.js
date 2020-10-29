@@ -31,7 +31,13 @@ router.get(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {
     const shop = await Shop.findByPk(req.params.id, {
-      include: [ Product, User ]
+      include: [
+        Product,
+        {
+          model: User,
+          attributes: [ "firstName", "lastName", "avatar", "createdAt" ]
+        }
+      ]
     });
     res.json(shop);
   })
