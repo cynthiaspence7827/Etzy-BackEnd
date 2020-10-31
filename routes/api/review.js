@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const { Review } = require('../../db/models');
+const { Review, Shop, Purchase, Product } = require('../../db/models');
+const product = require('../../db/models/product');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
 
 const reviewValidator = [
@@ -12,6 +13,26 @@ const reviewValidator = [
     .exists({ checkFalsy: true })
     .withMessage('To submit your review, there must be a body')
 ];
+
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const reviews = await Review.findAll({
+      include: [
+        {
+          model: Purchase,
+          include: [
+            {
+              model: Product,
+              include: Shop
+            }
+          ]
+        }
+      ]
+    });
+    res.json(reviews);
+  })
+);
 
 // create a new review
 router.post(

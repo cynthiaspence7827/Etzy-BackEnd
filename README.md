@@ -106,8 +106,135 @@
     lastName,
     email,
     hashedPassword, // always null
-
-  }
+    avatar,
+    createdAt,
+    updatedAt,
+    Shops: [
+      {
+        id,
+        name,
+        ownerId,
+        description,
+        createdAt,
+        updatedAt,
+        Products: [
+          {
+            id,
+            name,
+            price,
+            images,
+            description,
+            options,
+            inventory,
+            shopId,
+            createdAt,
+            updatedAt
+          },
+          ...
+        ]
+      },
+      ...
+    ]
+  },
+  Follower: [
+    {
+      id,
+      followerId,
+      followingId,
+      createdAt,
+      updatedAt
+    },
+    ...
+  ],
+  Following: [
+    {
+      id,
+      followerId,
+      followingId,
+      createdAt,
+      updatedAt
+    },
+    ...
+  ],
+  Favorites: [
+    {
+      id,
+      userId,
+      favProduct,
+      shopId,
+      productId,
+      createdAt,
+      Shop: {
+        id,
+        name,
+        ownerId,
+        description,
+        createdAt,
+        updatedAt
+      },
+      Product: {
+        id,
+        name, price,
+        images,
+        description,
+        options,
+        inventory,
+        shopId,
+        createdAt,
+        updatedAt
+      }
+    },
+    ...
+  ],
+  Orders: [
+    id,
+    userId,
+    createdAt,
+    updatedAt,
+    Purchases: [
+      {
+        id,
+        orderId,
+        productId,
+        createdAt,
+        updatedAt,
+        Product: {
+          id,
+          name,
+          price,
+          images,
+          description,
+          options,
+          inventory,
+          shopId,
+          createdAt,
+          updatedAt,
+          Shop: {
+            id,
+            name,
+            ownerId,
+            description,
+            createdAt,
+            updatedAt
+          }
+        },
+        Reviews: [
+          {
+            id,
+            purchaseId,
+            rating,
+            reviewBody,
+            reviewImg,
+            anonymous,
+            productReview,
+            createdAt,
+            updatedAt
+          },
+          ...
+        ]
+      }
+    ]
+  ]
 }
 ```
 

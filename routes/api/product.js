@@ -33,22 +33,35 @@ const productValidators = [
 ];
 
 // get all products
+/*
+RETURNS:
+[
+  {
+    id,
+    name,
+    price,
+    images,
+    description,
+    options,
+    inventory,
+    shopId,
+    createdAt,
+    updatedAt
+  },
+  ...
+]
+*/
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     let products = await Product.findAll();
-    let productId = products.map(product => product.id);
-    for (let i = 0; i < productId.length; i++) {
-      productId[ i ] = await Purchase.findAll({
-        where: {
-          productId: productId[ i ]
-        },
-        include: Review
-      });
-    }
-    products = products.map((product, i) => {
-      reviews = productId[ i ];
-      return { product, reviews };
+    products = products.map(product => {
+      return {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images.split(',')[ 0 ]
+      };
     });
     res.json(products);
   })
@@ -80,6 +93,40 @@ router.get(
 );
 
 // get product by id
+/*
+RETURNS:
+{
+  product: {
+    id,
+    name,
+    price,
+    images,
+    description,
+    options,
+    inventory,
+    shopId,
+    createdAt,
+    updatedAt,
+    Shop: {
+      id,
+      name,
+      ownerId,
+      description,
+      createdAt,
+      updatedAt
+    }
+  },
+  productReviews: [ //purchases (containing reviews)
+    id,
+    orderId,
+    productId,
+    createdAt,
+    updatedAt,
+    Reviews: [],
+    ...
+  ]
+}
+ */
 router.get(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {
@@ -92,7 +139,31 @@ router.get(
       },
       include: Review
     });
-    res.json({ product, productReviews });
+    let shopId = product.Shop.id;
+    let products = await Product.findAll({
+      where: {
+        shopId
+      }
+    });
+    let productIds = products.map(product => product.id);
+    let shopReviewsBefore = [];
+    for (let i = 0; i < productIds.length; i++) {
+      let reviews = await Purchase.findAll({
+        where: {
+          productId: productIds[ i ]
+        },
+        include: Review
+      });
+      reviews = reviews.map(review => review.Reviews);
+      shopReviewsBefore.push(...reviews);
+    }
+    shopReviewsBefore = shopReviewsBefore.filter(review => review.length);
+    shopReviews = [];
+    shopReviewsBefore.forEach(review => {
+      shopReviews.push(...review);
+    });
+    shopReviews = shopReviews.filter(review => !review.productReview);
+    res.json({ product, productReviews, shopReviews });
   })
 );
 

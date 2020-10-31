@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const express = require('express');
 const { check } = require('express-validator');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
-const { makeUserToken } = require('../../auth');
+const { makeUserToken, authenticated } = require('../../auth');
 const {
   User,
   Favorite,
@@ -29,10 +29,8 @@ const nameValidators = [
 
 const emailValidator = [
   check("email")
-    .exists({ checkFalsy: true })
-    .withMessage("Please give us an email.")
     .isEmail()
-    .withMessage("Please give us a valid email address.")
+    .withMessage("Please enter a valid email address.")
     .isLength({ max: 150 })
     .withMessage("An email can't be longer than 80 characters in length.")
     .custom(async (val, { req }) => {
@@ -46,7 +44,7 @@ const emailValidator = [
 const passwordValidator = [
   check("password")
     .exists({ checkFalsy: true })
-    .withMessage("Please give us a password.")
+    .withMessage("Please enter your password.")
     .isLength({ min: 8, max: 50 })
     .withMessage("A password must be between 10 to 20 characters in length.")
     .custom((val, { req }) => {
@@ -110,53 +108,66 @@ router.post(
 
 // Create a JWT token for a user on login
 // return JWT and all information for loggedIn user
-router.post('/token',
+/*
+RETURNS:
+{
+  token,
+  user: {
+    firstName,
+    lastName,
+    avatar,
+    createdAt, (date string)
+    favoriteProducts: [ productId, ... ],
+    favoriteShops: [ shopId, ... ]
+  }
+}
+ */
+router.patch('/token', // /api/users/token
   asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.findOne({
       where: { email },
-      include: [
-        {
-          model: Shop,
-          include: Product
-        },
-        {
-          model: Follow,
-          as: 'Follower',
-        },
-        {
-          model: Follow,
-          as: 'Following',
-        },
-        {
-          model: Favorite,
-          include: [ Shop, Product ]
-        },
-        {
-          model: Order,
-          include: {
-            model: Purchase,
-            include: [
-              {
-                model: Product,
-                include: Shop
-              },
-              Review
-            ]
-          }
-        }
-      ]
+      include: Favorite
     });
-    const token = makeUserToken(user);
     if (!user || !user.validatePassword(password)) {
       const err = new Error('Login Failed');
       err.title = '401 Login Failed';
       err.status = 401;
-      err.errors = [ 'The prvided credentials are invalid' ];
+      err.errors = [];
+      if (!user) {
+        err.errors.push('Please enter the email you used to register');
+      }
+      if (user && !user.validatePassword(password)) {
+        err.errors.push('The password entered does not match our records');
+      }
       return next(err);
     }
-    user.hashedPassword = null;
-    res.json({ token, user });
+    let favProductIds = user.Favorites.filter(product => product.favProduct).map(product => product.productId);
+    let favShopIds = user.Favorites.filter(shop => !shop.favProduct).map(shop => shop.shopId);
+    const token = makeUserToken(user);
+    user.tokenId = token;
+    await user.save();
+    const {
+      id,
+      firstName,
+      lastName,
+      userEmail,
+      avatar,
+      createdAt
+    } = user;
+    res.json({
+      token,
+      user: {
+        id,
+        firstName,
+        lastName,
+        email: userEmail,
+        avatar,
+        createdAt: createdAt.toDateString(),
+        favoriteProducts: favProductIds,
+        favoriteShops: favShopIds
+      }
+    });
   })
 );
 
@@ -249,6 +260,17 @@ router.delete(
     }
     await user.destroy();
     res.status(204).end();
+  })
+);
+
+// Remove user token
+router.delete(
+  '/token',
+  [ authenticated ],
+  asyncHandler(async (req, res) => {
+    req.user.tokenId = null;
+    await req.user.save();
+    res.json({ message: 'success' });
   })
 );
 

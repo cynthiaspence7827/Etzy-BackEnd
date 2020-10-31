@@ -7,7 +7,7 @@ const favoriteRouter = require('./api/favorite');
 const orderRouter = require('./api/order');
 const followRouter = require('./api/follow');
 
-router.use('/users', userRouter);
+router.use('/users', userRouter); // /api/users
 router.use('/shops', shopRouter);
 router.use('/products', productRouter);
 router.use('/reviews', reviewsRouter);

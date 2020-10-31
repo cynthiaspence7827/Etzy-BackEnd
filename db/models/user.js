@@ -18,6 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING.BINARY
     },
+    tokenId: {
+      type: DataTypes.STRING
+    },
     avatar: DataTypes.STRING
   }, {});
   User.associate = function (models) {

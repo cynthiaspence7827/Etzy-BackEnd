@@ -25,6 +25,9 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING.BINARY
       },
+      tokenId: {
+        type: Sequelize.STRING
+      },
       avatar: {
         type: Sequelize.STRING
       },
