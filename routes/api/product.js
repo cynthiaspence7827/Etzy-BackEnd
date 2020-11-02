@@ -5,7 +5,10 @@ const {
   Product,
   Review,
   Purchase,
-  Shop } = require('../../db/models');
+  Shop,
+  Order,
+  User } = require('../../db/models');
+const order = require('../../db/models/order');
 const { asyncHandler, handleValidationErrors } = require('../../utils');
 
 const productValidators = [
@@ -60,7 +63,7 @@ router.get(
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.images.split(',')[ 0 ]
+        images: product.images
       };
     });
     res.json(products);
@@ -93,51 +96,29 @@ router.get(
 );
 
 // get product by id
-/*
-RETURNS:
-{
-  product: {
-    id,
-    name,
-    price,
-    images,
-    description,
-    options,
-    inventory,
-    shopId,
-    createdAt,
-    updatedAt,
-    Shop: {
-      id,
-      name,
-      ownerId,
-      description,
-      createdAt,
-      updatedAt
-    }
-  },
-  productReviews: [ //purchases (containing reviews)
-    id,
-    orderId,
-    productId,
-    createdAt,
-    updatedAt,
-    Reviews: [],
-    ...
-  ]
-}
- */
 router.get(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {
     let product = await Product.findByPk(req.params.id, {
       include: Shop
     });
-    let productReviews = await Purchase.findAll({
+    let productReviewsBefore = await Purchase.findAll({
       where: {
         productId: req.params.id
       },
-      include: Review
+      include: [
+        Review,
+        {
+          model: Order,
+          include: {
+            model: User,
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          }
+        }
+      ]
+    });
+    let productReviews = productReviewsBefore.map(review => {
+      return { reviews: review.Reviews.filter(review => review.productReview), user: review.Order.User };
     });
     let shopId = product.Shop.id;
     let products = await Product.findAll({
@@ -152,17 +133,23 @@ router.get(
         where: {
           productId: productIds[ i ]
         },
-        include: Review
+        include: [
+          Review,
+          {
+            model: Order,
+            include: {
+              model: User,
+              attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+            }
+          }
+        ]
       });
-      reviews = reviews.map(review => review.Reviews);
       shopReviewsBefore.push(...reviews);
     }
-    shopReviewsBefore = shopReviewsBefore.filter(review => review.length);
-    shopReviews = [];
-    shopReviewsBefore.forEach(review => {
-      shopReviews.push(...review);
+    let shopReviews = shopReviewsBefore.map(review => {
+      return { reviews: review.Reviews.filter(review => !review.productReview), user: review.Order.User };
     });
-    shopReviews = shopReviews.filter(review => !review.productReview);
+    shopReviews = shopReviews.filter(review => review.reviews.length);
     res.json({ product, productReviews, shopReviews });
   })
 );

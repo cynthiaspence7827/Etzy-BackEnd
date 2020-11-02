@@ -60,10 +60,13 @@ const passwordValidator = [
 router.get(
   '/:id(\\d+)',
   asyncHandler(async (req, res) => {
-    const user = await User.findByPk(req.params.id, {
+    let user = await User.findByPk(req.params.id, {
       attributes: [ "firstName", "lastName", "avatar", "createdAt" ],
       include: [
-        Shop,
+        {
+          model: Shop,
+          include: Product
+        },
         {
           model: Favorite,
           include: [ Shop, Product ]
@@ -71,13 +74,35 @@ router.get(
         {
           model: Follow,
           as: 'Follower',
+          include: [ {
+            model: User,
+            as: 'Follower',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
         },
         {
           model: Follow,
           as: 'Following',
+          include: [ {
+            model: User,
+            as: 'Following',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
         }
       ]
     });
+    user = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      createdAt: user.createdAt.toDateString(),
+      Shops: user.Shops,
+      FavoriteShops: user.Favorites.filter(favorite => !favorite.favProduct).map(shop => shop.Shop),
+      FavoriteProducts: user.Favorites.filter(favorite => favorite.favProduct).map(product => product.Product),
+      Followers: user.Follower.map(follower => follower.Follower),
+      Following: user.Following.map(follows => follows.Following),
+    };
     res.json(user);
   })
 );
@@ -102,32 +127,45 @@ router.post(
       firstName, lastName, email, hashedPassword, avatar
     });
     const token = makeUserToken(newUser);
-    res.status(201).json({ token, newUser: { firstName, lastName, email, avatar, createdAt: newUser.createdAt } });
+    res.status(201).json({ token, newUser: { id: newUser.id, firstName, lastName, email, avatar, createdAt: newUser.createdAt } });
   })
 );
 
 // Create a JWT token for a user on login
 // return JWT and all information for loggedIn user
-/*
-RETURNS:
-{
-  token,
-  user: {
-    firstName,
-    lastName,
-    avatar,
-    createdAt, (date string)
-    favoriteProducts: [ productId, ... ],
-    favoriteShops: [ shopId, ... ]
-  }
-}
- */
-router.patch('/token', // /api/users/token
+router.put('/token', // /api/users/token
   asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
-    const user = await User.findOne({
+    let user = await User.findOne({
       where: { email },
-      include: Favorite
+      include: [
+        {
+          model: Shop,
+          include: Product
+        },
+        {
+          model: Favorite,
+          include: [ Shop, Product ]
+        },
+        {
+          model: Follow,
+          as: 'Follower',
+          include: [ {
+            model: User,
+            as: 'Follower',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
+        },
+        {
+          model: Follow,
+          as: 'Following',
+          include: [ {
+            model: User,
+            as: 'Following',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
+        }
+      ]
     });
     if (!user || !user.validatePassword(password)) {
       const err = new Error('Login Failed');
@@ -142,31 +180,78 @@ router.patch('/token', // /api/users/token
       }
       return next(err);
     }
-    let favProductIds = user.Favorites.filter(product => product.favProduct).map(product => product.productId);
-    let favShopIds = user.Favorites.filter(shop => !shop.favProduct).map(shop => shop.shopId);
     const token = makeUserToken(user);
     user.tokenId = token;
     await user.save();
-    const {
-      id,
-      firstName,
-      lastName,
-      userEmail,
-      avatar,
-      createdAt
-    } = user;
+    user = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      createdAt: user.createdAt.toDateString(),
+      Shops: user.Shops,
+      FavoriteShops: user.Favorites.filter(favorite => !favorite.favProduct).map(shop => shop.Shop),
+      FavoriteProducts: user.Favorites.filter(favorite => favorite.favProduct).map(product => product.Product),
+      Followers: user.Follower.map(follower => follower.Follower),
+      Following: user.Following.map(follows => follows.Following),
+    };
     res.json({
       token,
-      user: {
-        id,
-        firstName,
-        lastName,
-        email: userEmail,
-        avatar,
-        createdAt: createdAt.toDateString(),
-        favoriteProducts: favProductIds,
-        favoriteShops: favShopIds
-      }
+      user
+    });
+  })
+);
+
+router.put('/token/loggedin', // /api/users/token
+  asyncHandler(async (req, res) => {
+    const { id } = req.body;
+    const user = await User.findByPk(id, {
+      include: [
+        {
+          model: Shop,
+          include: Product
+        },
+        {
+          model: Favorite,
+          include: [ Shop, Product ]
+        },
+        {
+          model: Follow,
+          as: 'Follower',
+          include: [ {
+            model: User,
+            as: 'Follower',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
+        },
+        {
+          model: Follow,
+          as: 'Following',
+          include: [ {
+            model: User,
+            as: 'Following',
+            attributes: [ 'id', 'firstName', 'lastName', 'avatar' ]
+          } ]
+        }
+      ]
+    });
+    const token = makeUserToken(user);
+    user.tokenId = token;
+    await user.save();
+    user = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      createdAt: user.createdAt.toDateString(),
+      Shops: user.Shops,
+      FavoriteShops: user.Favorites.filter(favorite => !favorite.favProduct).map(shop => shop.Shop),
+      FavoriteProducts: user.Favorites.filter(favorite => favorite.favProduct).map(product => product.Product),
+      Followers: user.Follower.map(follower => follower.Follower),
+      Following: user.Following.map(follows => follows.Following),
+    };
+    res.json({
+      token,
+      user
     });
   })
 );
@@ -186,7 +271,7 @@ router.get(
 // Edit user data by id
 // name change
 // email change
-router.patch(
+router.put(
   '/:id(\\d+)',
   nameValidators,
   emailValidator,
@@ -217,7 +302,7 @@ router.patch(
 );
 
 // password change (verify old password)
-router.patch(
+router.put(
   '/:id(\\d+)/change-password',
   passwordValidator,
   asyncHandler(async (req, res) => {
@@ -307,6 +392,16 @@ router.get(
       }
     });
     res.json(following);
+  })
+);
+
+router.get(
+  '/:id/shops',
+  asyncHandler(async (req, res) => {
+    const shops = await User.findByPk(req.params.id, {
+      include: Shop
+    });
+    res.json({ shops: shops.Shops });
   })
 );
 
